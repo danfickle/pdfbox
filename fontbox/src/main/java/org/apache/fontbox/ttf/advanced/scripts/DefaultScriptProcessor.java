@@ -138,7 +138,7 @@ public class DefaultScriptProcessor extends ScriptProcessor {
         for (int i = 0; i < ng; i++) {
             int gid = ga [ i ];
             int gw = unscaledWidths [ i ];
-            if (isReorderedMark(gdef, ga, unscaledWidths, i)) {
+            if (isReorderedMark(gdef, ga, gpa, i)) {
                 nm++;
             }
         }
@@ -156,7 +156,7 @@ public class DefaultScriptProcessor extends ScriptProcessor {
                 int gid = ga [ i ];
                 int[] pa = (gpa != null) ? gpa [ i ] : null;
                 CharAssociation ca = aa [ i ];
-                if (isReorderedMark(gdef, ga, unscaledWidths, i)) {
+                if (isReorderedMark(gdef, ga, gpa, i)) {
                     nga [ k ] = gid;
                     naa [ k ] = ca;
                     if (npa != null) {
@@ -200,8 +200,8 @@ public class DefaultScriptProcessor extends ScriptProcessor {
         }
     }
 
-    protected boolean isReorderedMark(GlyphDefinitionTable gdef, int[] glyphs, int[] unscaledWidths, int index) {
-        return gdef.isGlyphClass(glyphs[index], GlyphDefinitionTable.GLYPH_CLASS_MARK);
+    protected boolean isReorderedMark(GlyphDefinitionTable gdef, int[] glyphs, int[][] gpa, int index) {
+        return gdef.isGlyphClass(glyphs[index], GlyphDefinitionTable.GLYPH_CLASS_MARK) && gpa[index][0]!=0;
     }
 
 }
