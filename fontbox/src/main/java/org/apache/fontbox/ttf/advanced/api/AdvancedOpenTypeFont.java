@@ -55,6 +55,7 @@ public class AdvancedOpenTypeFont extends OpenTypeFont {
     @Override
     public org.apache.fontbox.ttf.GlyphSubstitutionTable getGsub() throws IOException {
         return null;
+        //TODO return (org.apache.fontbox.ttf.advanced.GlyphSubstitutionTable) getTable(org.apache.fontbox.ttf.advanced.GlyphSubstitutionTable.TAG);
     }
 
     /**
@@ -72,7 +73,7 @@ public class AdvancedOpenTypeFont extends OpenTypeFont {
     /**
      * TODO
      */
-    public GlyphVector createGlyphVector(String text) throws IOException 
+    public GlyphVector createGlyphVector(String text,  int fontSize) throws IOException
     {
         if (text.isEmpty()) {
             return new GlyphVectorSimple(null);
@@ -101,12 +102,10 @@ public class AdvancedOpenTypeFont extends OpenTypeFont {
         org.apache.fontbox.ttf.advanced.GlyphPositioningTable positioningTable =
           (org.apache.fontbox.ttf.advanced.GlyphPositioningTable) getGPOS();
 
-        // org.apache.fontbox.ttf.advanced.GlyphDefinitionTable gdefTable =
-        //   (org.apache.fontbox.ttf.advanced.GlyphDefinitionTable) getGDEF();
+        org.apache.fontbox.ttf.advanced.GlyphDefinitionTable gdefTable =
+           (org.apache.fontbox.ttf.advanced.GlyphDefinitionTable) getGDEF();
 
-        // if (gdefTable != null) {
-        //     sequence = gdefTable.reorderCombiningMarks(sequence, widths, gpa, script, language, features);
-        // }
+
 
         Object[][] extraFeatures = new Object[][] {
             //new Object[] { "smcp", Boolean.FALSE },
@@ -115,8 +114,12 @@ public class AdvancedOpenTypeFont extends OpenTypeFont {
         //extraFeatures = null;
 
         // TODO: Correct script and language
-        GlyphSequence substituted = substitutionTable != null ? 
-             substitutionTable.substitute(sequence, "latn", "dflt", extraFeatures) : sequence;
+        Object[][] features = {{ "kern", true}, {"mark", true}, {"mkmk", true}};
+        String script = "latn";
+        String language = "dflt";
+
+        GlyphSequence substituted = substitutionTable != null ?
+             substitutionTable.substitute(sequence, script, language, extraFeatures) : sequence;
 
         int[][] adjustments = null;
         int[] widths = null;
@@ -135,13 +138,30 @@ public class AdvancedOpenTypeFont extends OpenTypeFont {
             // TODO: Correct script, language and font size
             // TODO: widths?
             positioned = positioningTable != null ? positioningTable.position(
-                substituted, "latn", "dflt", null, 20, widths, adjustments) : false;
+                substituted, script, language, features, fontSize*1000, getAdvanceWidths(), adjustments) : false;
+        }
+
+        System.out.printf("createGlyphVector1 i  dx dy dax day w -- positioned %n");
+        for (int i = 0; i < substituted.getGlyphCount(); i++) {
+            System.out.printf("createGlyphVector1 %d %h %d %d %d %d %n", i, substituted.getGlyph(i), adjustments[i][0], adjustments[i][1], adjustments[i][2], adjustments[i][3], widths[i]);
+        }
+
+
+        GlyphSequence reordered = gdefTable != null ?
+                gdefTable.reorderCombiningMarks(substituted, widths, adjustments, script, language, features) : substituted;
+
+        // For positioning an array dx, dy, advance_x, advance_y is needed
+        // Compare output of HarfBuzz hb-shape
+
+        System.out.printf("createGlyphVector1 2  dx dy dax day w  -- reordered %n");
+        for (int i = 0; i < reordered.getGlyphCount(); i++) {
+            System.out.printf("createGlyphVector2 %d %h %d %d %d %d %n", i, reordered.getGlyph(i), adjustments[i][0], adjustments[i][1], adjustments[i][2], adjustments[i][3], widths[i]);
         }
 
 //System.out.println("widths = " + Arrays.toString(widths));
-        int[] outGlyphs = substituted.getGlyphArray(false);
+        int[] outGlyphs = reordered.getGlyphArray(false);
 //System.out.println("outGlyphs = " + Arrays.toString(outGlyphs));
-        int outSize = substituted.getGlyphCount();
+        int outSize = reordered.getGlyphCount();
 
         float width = 0f;
         for (int i = 0; i < outSize; i++) {
@@ -161,17 +181,14 @@ public class AdvancedOpenTypeFont extends OpenTypeFont {
                 }
             }
 
-
 //System.out.println("advance = " + getAdvanceWidth(outGlyphs[i]));
 
             // TODO: Something with yAdjust
             // TODO: Debug width
-
             width += getAdvanceWidth(outGlyphs[i]) + xAdjust;
         }
 
         //System.out.println("w = " + width);
-
         return new GlyphVectorAdvanced(outGlyphs, getNormalizedWidth(width), positioned ? adjustments : null);
     }
 

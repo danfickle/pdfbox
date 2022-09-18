@@ -107,6 +107,15 @@ public class AdvancedTypographicTable extends TTFTable {
     }
 
     /**
+     * Set glyph definition table
+     * @param gdef
+     */
+    public void setGdef(GlyphDefinitionTable gdef) {
+        this.gdef = gdef;
+    }
+
+
+    /**
      * Obtain list of all lookup specifications.
      * @return (possibly empty) list of all lookup specifications
      */
